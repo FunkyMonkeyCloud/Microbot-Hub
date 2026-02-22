@@ -151,6 +151,9 @@ public class MotherloadMineScript extends Script
             case DEPOSIT_HOPPER:
                 depositHopper();
                 break;
+            case DROP_GEMS:
+                dropGems();
+                break;
         }
     }
 
@@ -173,6 +176,11 @@ public class MotherloadMineScript extends Script
 
         if (shouldRepairWaterwheel && getBrokenStrutCount() > 1) {
             status = MLMStatus.FIXING_WATERWHEEL;
+            return;
+        }
+
+        if (config.dropGems() && hasGemsInInventory()) {
+            status = MLMStatus.DROP_GEMS;
             return;
         }
 
@@ -263,6 +271,16 @@ public class MotherloadMineScript extends Script
         );
     }
 
+    private boolean hasGemsInInventory() {
+        return Rs2Inventory.contains(ItemID.UNCUT_SAPPHIRE, ItemID.UNCUT_EMERALD, ItemID.UNCUT_RUBY, ItemID.UNCUT_DIAMOND);
+    }
+    
+    private void dropGems() {
+        if (hasGemsInInventory()) {
+            Rs2Inventory.dropAll(ItemID.UNCUT_SAPPHIRE, ItemID.UNCUT_EMERALD, ItemID.UNCUT_RUBY, ItemID.UNCUT_DIAMOND);
+        }
+    }
+
     private int payDirtCount() {
         return Rs2Inventory.count(ItemID.PAYDIRT);
     }
@@ -286,7 +304,7 @@ public class MotherloadMineScript extends Script
 		{
 			// We use a modified version of waitForXpDrop to ensure we break out of the sleep if the strut is repaired
 			final int skillExp = Microbot.getClient().getSkillExperience(Skill.SMITHING);
-			sleepUntilTrue(() -> skillExp != Microbot.getClient().getSkillExperience(Skill.SMITHING) || getBrokenStrutCount() <= 1, 100, 10_000);
+			sleepUntilTrue(() -> skillExp != Microbot.getClient().getSkillExperience(Skill.SMITHING) || getBrokenStrutCount() <= 1, 250, 20_000);
 
 			dropHammerIfNeeded();
 			shouldRepairWaterwheel = false;
@@ -513,7 +531,7 @@ public class MotherloadMineScript extends Script
 
 		handlePickaxeSpec();
 
-		if (!rs2TileObjectCache.query().interact(vein.getId())) return false;
+		if (!vein.click()) return false;
 		oreVein = vein;
 
 		return sleepUntil(() -> {
